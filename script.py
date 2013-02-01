@@ -15,26 +15,26 @@ def getSumarios(dataIni="20/11/2012", dataFim="23/11/2012"):
 def scrapeSumarios(sumarios):
     """Extrai os discursos do XMLs dos sumarios e retorna uma array com dicionarios."""
     discursos_dict = {}
-    for s in sumarios.xpath('/sessoesDiscursos/sessao'):
+    for s in sumarios.xpath('/sessoesDiscursos/sessao/fasesSessao/faseSessao/discursos/discurso'):
         discurso = {}
-        discurso['codigo_sessao'] = s.xpath('./codigo')[0].text.strip()
-        discurso['data_sessao'] = s.xpath('./data')[0].text.strip()
-        discurso['numero_sessao'] = s.xpath('./numero')[0].text.strip()
-        discurso['tipo_sessao'] = s.xpath('./tipo')[0].text.strip()
-        for f in s.xpath('./fasesSessao/faseSessao'):
-            discurso['fase_codigo'] = f.xpath('./codigo')[0].text.strip()
-            discurso['fase_descricao'] = f.xpath('./descricao')[0].text.strip()
-            for d in f.xpath('./discursos/discurso'):
-                discurso['orador_nome'] = d.xpath('./orador/nome')[0].text.strip()
-                discurso['orador_numero'] = d.xpath('./orador/numero')[0].text.strip()
-                discurso['orador_partido'] = d.xpath('./orador/partido')[0].text.strip()
-                discurso['orador_uf'] = d.xpath('./orador/uf')[0].text.strip()
-                discurso['hora_inicio'] = d.xpath('./horaInicioDiscurso')[0].text.strip()
-                discurso['quarto'] = d.xpath('./numeroQuarto')[0].text.strip()
-                discurso['insercao'] = d.xpath('./numeroInsercao')[0].text.strip()
-                discurso['sumario'] = d.xpath('./sumario')[0].text.strip()
-                discurso['id'] = md5.new(simplejson.dumps(discurso)).hexdigest()
-                discursos_dict[discurso['id']] = discurso
+        discurso['codigo_sessao'] = s.xpath('../../../../codigo')[0].text.strip()
+        discurso['data_sessao'] = s.xpath('../../../../data')[0].text.strip()
+        discurso['numero_sessao'] = s.xpath('../../../../numero')[0].text.strip()
+        discurso['tipo_sessao'] = s.xpath('../../../../tipo')[0].text.strip()
+        
+        discurso['fase_codigo'] = s.xpath('../../codigo')[0].text.strip()
+        discurso['fase_descricao'] = s.xpath('../../descricao')[0].text.strip()
+        
+        discurso['orador_nome'] = s.xpath('./orador/nome')[0].text.strip()
+        discurso['orador_numero'] = s.xpath('./orador/numero')[0].text.strip()
+        discurso['orador_partido'] = s.xpath('./orador/partido')[0].text.strip()
+        discurso['orador_uf'] = s.xpath('./orador/uf')[0].text.strip()
+        discurso['hora_inicio'] = s.xpath('./horaInicioDiscurso')[0].text.strip()
+        discurso['quarto'] = s.xpath('./numeroQuarto')[0].text.strip()
+        discurso['insercao'] = s.xpath('./numeroInsercao')[0].text.strip()
+        discurso['sumario'] = s.xpath('./sumario')[0].text.strip()
+        discurso['id'] = md5.new(simplejson.dumps(discurso)).hexdigest()
+        discursos_dict[discurso['id']] = discurso
     
     discursos = []
     for d in discursos_dict:
@@ -45,14 +45,36 @@ def getIntegra(discurso):
     """Extrai a integra do discurso usando o webservice da Camara"""
     args = 'obterInteiroTeorDiscursosPlenario?codSessao=' + discurso['codigo_sessao'] + '&numOrador=' + discurso['orador_numero'] + '&numQuarto=' + discurso['quarto'] + '&numInsercao=' + discurso['insercao']
     url = BASE_URL + args
-    print url
-    xml = urllib2.urlopen(url)
+    try:
+        xml = urllib2.urlopen(url)
+    except urllib2.HTTPError:
+        print discurso
+        print "Erro carregando a url:"
+        print url
+        return None
     soup = etree.parse(xml).getroot()
     discurso['integrartf64'] = base64.b64decode(soup.xpath('/sessao/discursoRTFBase64')[0].text)
     discurso['integra'] = rtf2md(discurso['integrartf64'])
     return discurso
-       
-def rockandroll():
+               
+def rockandroll(dataIni, dataFim):
     """Rock and roll all night!"""
-    conn = pymongo.Connection(MONGODB_SERVER)
-    db = conn['discursos']
+    sumarios = getSumarios(dataIni, dataFim)
+    discursos = scrapeSumarios(sumarios)
+    print "Antes " + str(db['discursos'].find().count())
+    loadDb(discursos, db, "discursos")
+    print "Agora " + str(db['discursos'].find().count())
+    
+def carregaIntegras(db, collection='discursos'):
+    discursos = db[collection].find({ "integra" : { "$exists" : False }})
+    discursos_completos = []
+    for d in discursos:
+        #discursos_completos.append(getIntegra(d))
+        item = getIntegra(d)
+        if item:
+            db.discursos.update({"id" : item["id"]}, item,  True)
+    return discursos_completos
+
+conn = pymongo.Connection(MONGODB_SERVER)
+db = conn['discursos']
+print "Hello!"
