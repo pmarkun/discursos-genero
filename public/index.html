@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Gênero do Discurso - Câmara Federal 2010-2012</title>
+    <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <script src="vendor/js/raphael.js"></script>
+    <script src="vendor/js/wordtree/word-tree-layout.js"></script>
+    <script src="vendor/js/wordtree/wordtree.js"></script>
+    <script src="vendor/js/tempo.js"></script>
+    <script src="vendor/js/bootstrap.min.js"></script>
+    <script src="js/misc.js"></script>
+    <link href="vendor/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <script>
+        SETTINGS = {}
+        SETTINGS['SERVER_ADDRESS'] = "http://localhost:5000/discursos/";
+    </script>
+    <script>
+        function loadJson(url) {
+            var json = '';
+            $.ajax({
+            'async': false,
+            'global': false,
+            'url': url,
+            'dataType': "json",
+            'success': function (data) {
+                    json = data;
+                }
+            });
+            return json;
+        };
+    </script>
+    
+  </head>
+  <body>
+    <div id='papibaquigrafo' class="container">
+        <div id="data" style="clear:both;" data-template>
+            <div style="float:left;width:20%">{{orador_nome}}</div>
+            <div id="{{id}}" class="integra" style="float:right;width:80%">
+                <span style="display:none">{{integra}}</span>
+            </div>
+        </div>
+    </div>
+    <div id="footer" class="footer">
+        <a href="https://github.com/pmarkun/discurso-genero">github source</a>
+    </div>
+    
+    <script>
+
+        $(document).ready(function() {
+            var query = { "orador_uf" : "SP" }
+
+            data = loadJson(SETTINGS['SERVER_ADDRESS'] + JSON.stringify(query));
+            console.log(SETTINGS['SERVER_ADDRESS'] + JSON.stringify(query));
+            tos = Tempo.prepare("papibaquigrafo");
+            tos.starting();
+            tos.render(data);
+            
+            $(".integra").each(function (index, d) {
+                var context = "Senador";
+                var data = tokenize(d.textContent, context);
+                createTree(data, context, d.id);
+            });
+        });
+    </script>
+  </body>
+</html>
