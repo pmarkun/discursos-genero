@@ -1,16 +1,10 @@
+from settings import *
+from tools import *
 from lxml import etree
 import urllib2, base64, simplejson, md5
-import rtf as rtflib, html2text #Ensure that you have those libs first
-import pymongo
-
-def rtf2md(rtfstring):
-    tmp_html = rtflib.Rtf2Html.getHtml(rtfstring)
-    tmp_markdown = html2text.html2text(tmp_html)
-    return tmp_markdown
-    
-BASE_URL = "http://www.camara.gov.br/sitcamaraws/SessoesReunioes.asmx/"
 
 def getSumarios(dataIni="20/11/2012", dataFim="23/11/2012"):
+    """Acessa o XML para um intervalo de datas especifico (formato dd/mm/yyyy) usando o webservice da Camara."""
     args = "ListarDiscursosPlenario?dataIni=" + dataIni + "&dataFim=" + dataFim + "&codigoSessao=&parteNomeParlamentar=&siglaPartido=&siglaUF="
     url = BASE_URL + args
     print url
@@ -19,6 +13,7 @@ def getSumarios(dataIni="20/11/2012", dataFim="23/11/2012"):
     return soup
 
 def scrapeSumarios(sumarios):
+    """Extrai os discursos do XMLs dos sumarios e retorna uma array com dicionarios."""
     discursos_dict = {}
     for s in sumarios.xpath('/sessoesDiscursos/sessao'):
         discurso = {}
@@ -46,16 +41,8 @@ def scrapeSumarios(sumarios):
         discursos.append(discursos_dict[d])
     return discursos
 
-tmp_discurso = {
-    "codigo_sessao" : "317.2.54.O",
-    "orador_numero" : "3",
-    "insercao" : "86",
-    "quarto" : "1"
-    }
-    
-tmp_discurso['nome'] = "JANETE ROCHA PIETA"
-
 def getIntegra(discurso):
+    """Extrai a integra do discurso usando o webservice da Camara"""
     args = 'obterInteiroTeorDiscursosPlenario?codSessao=' + discurso['codigo_sessao'] + '&numOrador=' + discurso['orador_numero'] + '&numQuarto=' + discurso['quarto'] + '&numInsercao=' + discurso['insercao']
     url = BASE_URL + args
     print url
@@ -64,21 +51,8 @@ def getIntegra(discurso):
     discurso['integrartf64'] = base64.b64decode(soup.xpath('/sessao/discursoRTFBase64')[0].text)
     discurso['integra'] = rtf2md(discurso['integrartf64'])
     return discurso
-
-def yieldDb(discursos):    
-    for discurso in discursos:
-        yield discurso
-            
-def loadDb(discursos, db):
-    for discurso in yieldDb(discursos):
-        db.discursos.update({"id" : discurso["id"]}, discurso,  True)
-        
+       
 def rockandroll():
-    print "Loading sumarios"
-    sumarios = getSumarios("20/11/2012", "23/11/2012")
-    print "Converting in discursos"
-    discursos = scrapeSumarios(sumarios)
-    return discursos
-
-conn = pymongo.Connection("mongodb://edward.localserver")
-db = conn['discursos']
+    """Rock and roll all night!"""
+    conn = pymongo.Connection(MONGODB_SERVER)
+    db = conn['discursos']
