@@ -45,6 +45,7 @@ def getIntegra(discurso):
     """Extrai a integra do discurso usando o webservice da Camara"""
     args = 'obterInteiroTeorDiscursosPlenario?codSessao=' + discurso['codigo_sessao'] + '&numOrador=' + discurso['orador_numero'] + '&numQuarto=' + discurso['quarto'] + '&numInsercao=' + discurso['insercao']
     url = BASE_URL + args
+    xml = None;
     try:
         xml = urllib2.urlopen(url)
     except urllib2.HTTPError:
@@ -52,10 +53,18 @@ def getIntegra(discurso):
         print "Erro carregando a url:"
         print url
         return None
-    soup = etree.parse(xml).getroot()
-    discurso['integrartf64'] = base64.b64decode(soup.xpath('/sessao/discursoRTFBase64')[0].text)
-    discurso['integra'] = rtf2md(discurso['integrartf64'])
-    return discurso
+    if (xml):
+        soup = etree.parse(xml).getroot()
+        discurso['integrartf64'] = base64.b64decode(soup.xpath('/sessao/discursoRTFBase64')[0].text)
+        try:
+            discurso['integra'] = rtf2md(discurso['integrartf64'])
+            return discurso
+        except:
+            print discurso
+            print url
+            return None
+    else:
+        return None
                
 def rockandroll(dataIni, dataFim):
     """Rock and roll all night!"""
@@ -67,13 +76,43 @@ def rockandroll(dataIni, dataFim):
     
 def carregaIntegras(db, collection='discursos'):
     discursos = db[collection].find({ "integra" : { "$exists" : False }})
-    discursos_completos = []
+    i = 0
     for d in discursos:
-        #discursos_completos.append(getIntegra(d))
+        i = i + 1
         item = getIntegra(d)
         if item:
             db.discursos.update({"id" : item["id"]}, item,  True)
-    return discursos_completos
+        if i == 1000:
+            print "Loading 1000 more..."
+            i = 0
+
+def missingIntegras(db, collection="discursos"):
+    return db[collection].find({ "integra" : { "$exists" : False }})
+    
+def addKeyword(word, db, collection='discursos'):
+    regex_word = "(?i).*"+word+".*"
+    discursos = db[collection].find({ "integra" : { "$regex" : regex_word }})
+    for d in discursos:
+        if d.has_key("keywords"):
+            try:
+                #lame way
+                d["keywords"].index(word)
+            except:
+                d["keywords"].append(word)
+        else:
+            d["keywords"] = [word]
+        db[collection].update({"id" : d["id"]}, d,  True)
+    return db[collection].find({"keywords" : word})
+
+def findKeyword(word, db, collection='discursos'):
+    return db[collection].find({"keywords" : word})
+    
+def removeKeyword(word, db, collection='discursos'):
+    discursos = db[collection].find({"keywords" : word})
+    for d in discursos:
+        d['keywords'].remove(word)
+        db[collection].update({"id" : d["id"]}, d,  True)
+    return discursos
 
 conn = pymongo.Connection(MONGODB_SERVER)
 db = conn['discursos']

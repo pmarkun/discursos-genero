@@ -18,7 +18,7 @@ function tokenize(text, word) {
 				return tokenized;
 			}
 
-function createTree(data, context, container) {
+function createTree(data, context, container, height) {
     var myTree = null;
     var lefts = data['left'];
     for(var i = 0; i < lefts.length; i++){
@@ -26,7 +26,7 @@ function createTree(data, context, container) {
     }
     var rights = data['right'];
     var w = 1000,
-    h = 150,
+    h = height,
     detail = 100 /* % */;
     var paper = Raphael(container, w, h);
     makeWordTree(rights, context, detail, container, w, h, WordTree.RO_LEFT, paper);	

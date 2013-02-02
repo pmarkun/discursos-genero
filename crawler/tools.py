@@ -1,10 +1,13 @@
 import html2text
 from rtf import Rtf2Html
+from lxml.html import fromstring, tostring
 import pymongo
 
 def rtf2md(rtfstring):
     """Converts rtf to markdown file"""
     tmp_html = Rtf2Html.getHtml(rtfstring)
+    tmp_html = fromstring(tmp_html)
+    tmp_html = tostring(tmp_html)
     tmp_markdown = html2text.html2text(tmp_html)
     return tmp_markdown
 

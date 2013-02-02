@@ -9,37 +9,29 @@
     <script src="vendor/js/wordtree/wordtree.js"></script>
     <script src="vendor/js/tempo.js"></script>
     <script src="vendor/js/bootstrap.min.js"></script>
+    <script src="js/settings.js"></script>
     <script src="js/misc.js"></script>
     <link href="vendor/css/bootstrap.min.css" rel="stylesheet" media="screen">
     <script>
-        SETTINGS = {}
-        SETTINGS['SERVER_ADDRESS'] = "http://localhost:5000/discursos/";
-    </script>
-    <script>
-        function loadJson(url) {
-            var json = '';
-            $.ajax({
-            'async': false,
-            'global': false,
-            'url': url,
-            'dataType': "json",
-            'success': function (data) {
-                    json = data;
-                }
-            });
-            return json;
-        };
+        
     </script>
     
   </head>
   <body>
     <div id='papibaquigrafo' class="container">
-        <div id="data" style="clear:both;" data-template>
-            <div style="float:left;width:20%">{{orador_nome}}</div>
-            <div id="{{id}}" class="integra" style="float:right;width:80%">
-                <span style="display:none">{{integra}}</span>
+        <div id="consolidado">
+            <div style="float:left;width:20%">Consolidado</div>
+            <div id="consolidado_wordtree" style="float:right;width:80%">
             </div>
         </div>
+        <div id="data" style="clear:both;" data-template>
+            <div style="float:left;width:20%">{{orador_nome}} - {{orador_uf}}<br />{{orador_partido}}</div>
+            <div id="{{id}}" class="integra" style="float:right;width:80%">
+            </div>
+        </div>
+    </div>
+    <div id="control">
+            <button id="load-more">carregar mais</button>
     </div>
     <div id="footer" class="footer">
         <a href="https://github.com/pmarkun/discurso-genero">github source</a>
@@ -48,18 +40,28 @@
     <script>
 
         $(document).ready(function() {
-            var query = { "orador_uf" : "SP" }
-
-            data = loadJson(SETTINGS['SERVER_ADDRESS'] + JSON.stringify(query));
-            console.log(SETTINGS['SERVER_ADDRESS'] + JSON.stringify(query));
+            height = 250;
+            start = 0;
+            finish = 9;
+            var args = "mulher";
+            data = loadJson(SETTINGS['SERVER_ADDRESS'] + args);
             tos = Tempo.prepare("papibaquigrafo");
             tos.starting();
-            tos.render(data);
             
-            $(".integra").each(function (index, d) {
-                var context = "Senador";
-                var data = tokenize(d.textContent, context);
-                createTree(data, context, d.id);
+            function loadDiscursos(data, start, finish) {
+                tos.append(data.slice(start, finish));
+                $(data.slice(start,finish)).each(function (index, d) {
+                    var context = "mulher";
+                    var data = tokenize(d.discursos.join("\n"), context);
+                    createTree(data, context, d.id, height);
+                });
+            }
+            
+            loadDiscursos(data, start, finish);
+            $("#load-more").click(function () {
+                start = finish;
+                finish = finish + 10;
+                loadDiscursos(data, start, finish);
             });
         });
     </script>
