@@ -9,7 +9,12 @@ def getSumarios(dataIni="20/11/2012", dataFim="23/11/2012"):
     url = BASE_URL + args
     print url
     xml = urllib2.urlopen(url)
-    soup = etree.parse(xml).getroot()
+    xml_file = open('rawdata/discursoscamara_'+dataIni.replace("/","-")+"_"+dataFim.replace("/","-")+".xml", 'w')
+    xml_file.write(xml.read())
+    xml_file.close()
+    xml_read = open('rawdata/discursoscamara_'+dataIni.replace("/","-")+"_"+dataFim.replace("/","-")+".xml", 'r')
+    soup = etree.parse(xml_read).getroot()
+    xml_read.close()
     return soup
 
 def scrapeSumarios(sumarios):
