@@ -1,0 +1,3 @@
+SETTINGS = {}
+SETTINGS['MONGODB_SERVER'] = 'mongodb://edward.localserver:27017'
+SETTINGS['MONGODB_DB'] = 'discursos

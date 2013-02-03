@@ -3,13 +3,10 @@ import bottle
 from bottle import route, run, request, abort, response
 from pymongo import Connection
 from bson import json_util
+from settings import *
 
-SETTINGS = {}
-SETTINGS['MONGODB_SERVER'] = 'edward.localserver'
-SETTINGS['MONGODB_PORT'] = 27017
-SETTINGS['MONGODB_DB'] = 'discursos'
-
-
+conn = Connection(SETTINGS['MONGODB_SERVER'])
+db = conn[SETTINGS['MONGODB_DB']]
 
 def bson2json(bson_file):
     return simplejson.dumps(bson.decode_all(bson_file))
